@@ -1,5 +1,6 @@
 import java.math.BigInteger;
 import java.util.Scanner;
+import java.util.concurrent.SynchronousQueue;
 import java.util.regex.Matcher;
 
 /**
@@ -7,21 +8,38 @@ import java.util.regex.Matcher;
  */
 public class Hamming {
     private int checkBitCount;
+    private Scanner scanner;
+
+    public Hamming() {
+        scanner = new Scanner(System.in);
+    }
 
     public static void main(String args[]) {
         Hamming hamming = new Hamming();
-        hamming.start();
+        try {
+            if (args[0].equals("create")) {
+                hamming.startCreate();
+            } else if (args[0].equals("correct")) {
+                hamming.startCorrect();
+            }
+        } catch (Exception e) {
+            System.out.println("Usage: java Hamming create\n   or: java Hamming correct\nCreate or correct a Hamming codeword.");
+        }
     }
 
-    public void start() {
-        Scanner scanner = new Scanner(System.in);
-        System.out.print("Input data: ");
-        String data = scanner.nextLine();
-        while (!data.matches("[01]+")) {
-            System.out.println("Wrong input, try again.");
-            System.out.print("Input data: ");
-            data = scanner.nextLine();
-        }
+    public void startCorrect() {
+        System.out.println("Codeword correction");
+        String codeword = askInput("codeword");
+        Parity parity = askParity();
+        checkForError(codeword, parity);
+    }
+
+    private void checkForError(String codeword, Parity parity) {
+        checkBitCount = (int) (Math.log(codeword.length()) / Math.log(2)) + 1;
+        System.out.println(checkBitCount);
+    }
+
+    private Parity askParity() {
         System.out.println("Select parity:");
         System.out.println("  1. Even");
         System.out.println("  2. Odd");
@@ -39,6 +57,24 @@ public class Hamming {
         } else {
             parity = Parity.ODD;
         }
+        return parity;
+    }
+
+    private String askInput(String type) {
+        System.out.print("Input " + type + ": ");
+        String data = scanner.nextLine();
+        while (!data.matches("[01]+")) {
+            System.out.println("Wrong input, try again.");
+            System.out.print("Input " + type + ": ");
+            data = scanner.nextLine();
+        }
+        return data;
+    }
+
+    public void startCreate() {
+        System.out.println("Codeword correction");
+        String data = askInput("data");
+        Parity parity = askParity();
         calculateCodeWord(data, parity);
     }
 
@@ -61,6 +97,9 @@ public class Hamming {
         return builder.toString();
     }
 
+    /*
+    Replaces X's with the right bit set
+     */
     private String replaceParityBits(String data, Parity parity) {
         while(data.contains("X")) {
             int startIndex = data.indexOf('X');
@@ -73,22 +112,16 @@ public class Hamming {
     private String calculateCheckBit(String data, int startIndex, Parity parity) {
         int skip = startIndex + 1;
         boolean use = true;
-        char[] bits = new char[checkBitCount * 2];
         int j = 0;
+        int bitCounter = 0;
         for (int i = startIndex, counter = 1; i < data.length(); i++, counter++) {
             if (use) {
-                bits[j++] = data.charAt(i);
+                if (data.charAt(i) == '1') {
+                    bitCounter++;
+                }
             }
             if (counter % skip == 0) {
                 use = !use;
-            }
-        }
-        int counter = 0;
-        for (char bit : bits) {
-            if (Character.isDigit(bit)) {
-                if (bit == '1') {
-                    counter++;
-                }
             }
         }
         int p = 0;
@@ -100,7 +133,7 @@ public class Hamming {
                 p = 1;
                 break;
         }
-        if (counter % 2 == p) {
+        if (bitCounter % 2 == p) {
             return "0";
         } else {
             return "1";
