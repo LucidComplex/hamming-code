@@ -15,15 +15,15 @@ public class Hamming {
     }
 
     public static void main(String args[]) {
-        Hamming hamming = new Hamming();
-        try {
-            if (args[0].equals("create")) {
-                hamming.startCreate();
-            } else if (args[0].equals("correct")) {
-                hamming.startCorrect();
-            }
-        } catch (Exception e) {
+        if (args.length == 0) {
             System.out.println("Usage: java Hamming create\n   or: java Hamming correct\nCreate or correct a Hamming codeword.");
+            return;
+        }
+        Hamming hamming = new Hamming();
+        if (args[0].equals("create")) {
+            hamming.startCreate();
+        } else if (args[0].equals("correct")) {
+            hamming.startCorrect();
         }
     }
 
@@ -31,13 +31,36 @@ public class Hamming {
         System.out.println("Codeword correction");
         String codeword = askInput("codeword");
         Parity parity = askParity();
-        checkForError(codeword, parity);
+        int errorPosition = checkForError(codeword, parity);
+        if (errorPosition != 0) {
+            System.out.print("Corrected codeword: ");
+            StringBuilder builder = new StringBuilder(codeword);
+            char flip = '0';
+            if (codeword.charAt(errorPosition - 1) == '0') {
+                flip = '1';
+            }
+            builder.setCharAt(errorPosition - 1, flip);
+            System.out.println(builder);
+        }
     }
 
-    private void checkForError(String codeword, Parity parity) {
+    private int checkForError(String codeword, Parity parity) {
         checkBitCount = (int) (Math.log(codeword.length()) / Math.log(2)) + 1;
-        System.out.println(checkBitCount);
+        int errorPosition = 0;
+        for (int i = 0; i < checkBitCount; i++) {
+            int checkBitIndex = (int) Math.pow(2, i) - 1;
+            if (calculateCheckBit(codeword, checkBitIndex, parity).equals("1")) {
+                errorPosition += checkBitIndex + 1;
+            }
+        }
+        if (errorPosition == 0) {
+            System.out.println("No errors found.");
+        } else {
+            System.out.println("Error found at position " + errorPosition);
+        }
+        return errorPosition;
     }
+
 
     private Parity askParity() {
         System.out.println("Select parity:");
@@ -72,7 +95,7 @@ public class Hamming {
     }
 
     public void startCreate() {
-        System.out.println("Codeword correction");
+        System.out.println("Codeword creation");
         String data = askInput("data");
         Parity parity = askParity();
         calculateCodeWord(data, parity);
